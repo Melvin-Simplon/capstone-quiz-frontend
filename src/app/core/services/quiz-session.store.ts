@@ -44,12 +44,14 @@ export class QuizSessionStore {
     if (!session || !question) {
       throw new Error('No active question to answer');
     }
-    return this.api.submitAnswer(session.sessionId, question.questionId, { selectedOptionIds }).pipe(
-      tap(result => {
-        this.lastResult.set(result);
-        this.answeredQuestionIds.update(ids => new Set(ids).add(question.questionId));
-      })
-    );
+    return this.api
+      .submitAnswer(session.sessionId, question.questionId, { selectedOptionIds })
+      .pipe(
+        tap(result => {
+          this.lastResult.set(result);
+          this.answeredQuestionIds.update(ids => new Set(ids).add(question.questionId));
+        })
+      );
   }
 
   goToNextQuestion(): void {

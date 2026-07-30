@@ -49,7 +49,9 @@
     <div class="feedback" [class.correct]="result.correct" [class.incorrect]="!result.correct">
       <mat-icon>{{ result.correct ? 'check_circle' : 'cancel' }}</mat-icon>
       <div>
-        <p class="feedback-title">{{ (result.correct ? 'quiz.correct' : 'quiz.incorrect') | translate }}</p>
+        <p class="feedback-title">
+          {{ (result.correct ? 'quiz.correct' : 'quiz.incorrect') | translate }}
+        </p>
         @if (result.explanation) {
           <p class="explanation">{{ result.explanation }}</p>
         }

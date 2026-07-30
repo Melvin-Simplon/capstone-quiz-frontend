@@ -27,7 +27,10 @@ const session: QuizSession = {
   ],
 };
 
-function setup(storeOverrides: Record<string, unknown> = {}, apiOverrides: Record<string, unknown> = {}) {
+function setup(
+  storeOverrides: Record<string, unknown> = {},
+  apiOverrides: Record<string, unknown> = {}
+) {
   const navigate = vi.fn();
 
   TestBed.configureTestingModule({
