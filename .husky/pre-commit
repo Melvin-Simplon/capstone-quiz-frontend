@@ -1,6 +1,3 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
 echo "\033[1;34m🔍 Running lint on staged files...\033[0m"
 npm run lint
 LINT_STATUS=$?

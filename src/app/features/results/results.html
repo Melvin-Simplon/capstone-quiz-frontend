@@ -6,13 +6,21 @@
   <h1 class="page-title">{{ 'results.title' | translate }}</h1>
 
   <div class="score-panel">
-    <div class="score-ring" [class]="scoreBand()" [style.--score-deg]="scoreRounded() * 3.6 + 'deg'">
+    <div
+      class="score-ring"
+      [class]="scoreBand()"
+      [style.--score-deg]="scoreRounded() * 3.6 + 'deg'"
+    >
       <div class="score-ring-inner">
         <span class="score-value">{{ scoreRounded() }}%</span>
       </div>
     </div>
     <p class="score-summary">
-      {{ 'results.score' | translate: { correct: r.correctCount, total: r.totalQuestions, percentage: scoreRounded() } }}
+      {{
+        'results.score'
+          | translate
+            : { correct: r.correctCount, total: r.totalQuestions, percentage: scoreRounded() }
+      }}
     </p>
   </div>
 
