@@ -25,7 +25,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: conic-gradient(var(--ring-color) var(--score-deg, 0deg), var(--mat-sys-surface-container-high) 0deg);
+  background: conic-gradient(
+    var(--ring-color) var(--score-deg, 0deg),
+    var(--mat-sys-surface-container-high) 0deg
+  );
   margin-bottom: 16px;
 
   &.good {

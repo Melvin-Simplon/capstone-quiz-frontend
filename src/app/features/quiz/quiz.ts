@@ -95,7 +95,9 @@ export class Quiz {
   }
 
   isWrongSelection(optionId: string): boolean {
-    return this.lastResult() !== null && this.isSelected(optionId) && !this.isCorrectOption(optionId);
+    return (
+      this.lastResult() !== null && this.isSelected(optionId) && !this.isCorrectOption(optionId)
+    );
   }
 
   submit(): void {

@@ -24,8 +24,10 @@
           }
           <p class="module-count">
             {{
-              (certification.moduleCount > 1 ? 'certifications.moduleCountPlural' : 'certifications.moduleCount')
-                | translate: { count: certification.moduleCount }
+              (certification.moduleCount > 1
+                ? 'certifications.moduleCountPlural'
+                : 'certifications.moduleCount'
+              ) | translate: { count: certification.moduleCount }
             }}
           </p>
         </div>
