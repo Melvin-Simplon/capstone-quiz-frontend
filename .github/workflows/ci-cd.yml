@@ -14,7 +14,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  verify:
+  # Named lint rather than verify because that is the check main's branch
+  # protection requires by name. It does more than lint: format and unit tests
+  # run here too.
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -72,7 +75,7 @@ jobs:
       - uses: github/codeql-action/analyze@v3
 
   deploy:
-    needs: [verify, security, codeql]
+    needs: [lint, security, codeql]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: nonprod
