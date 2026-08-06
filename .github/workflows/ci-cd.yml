@@ -126,6 +126,7 @@ jobs:
           done
 
           echo "api_url=https://${backend}/api" >> "$GITHUB_OUTPUT"
+          echo "backend_origin=https://${backend}" >> "$GITHUB_OUTPUT"
           echo "site=$site" >> "$GITHUB_OUTPUT"
           echo "group=$group" >> "$GITHUB_OUTPUT"
           echo "vault=$vault" >> "$GITHUB_OUTPUT"
@@ -160,21 +161,32 @@ jobs:
         env:
           API_URL: ${{ steps.target.outputs.api_url }}
           API_KEY: ${{ steps.key.outputs.value }}
+          BACKEND_ORIGIN: ${{ steps.target.outputs.backend_origin }}
         run: |
-          file=src/environments/environment.ts
-          python3 - "$file" <<'PY'
-          import os, sys, pathlib
+          python3 <<'PY'
+          import os, pathlib, sys
 
-          path = pathlib.Path(sys.argv[1])
-          text = path.read_text()
-          for placeholder, value in (
-              ("https://REPLACE_WITH_PROD_API_URL/api", os.environ["API_URL"]),
-              ("__BACKEND_API_KEY__", os.environ["API_KEY"]),
-          ):
-              if placeholder not in text:
-                  sys.exit(f"{placeholder} is missing from {path}, nothing was substituted.")
-              text = text.replace(placeholder, value)
-          path.write_text(text)
+          # Each placeholder is required: a build that silently shipped one of
+          # them would reach the browser as a broken URL, an unusable key, or a
+          # policy refusing the very API the page has to call.
+          substitutions = {
+              "src/environments/environment.ts": (
+                  ("https://REPLACE_WITH_PROD_API_URL/api", os.environ["API_URL"]),
+                  ("__BACKEND_API_KEY__", os.environ["API_KEY"]),
+              ),
+              "public/staticwebapp.config.json": (
+                  ("__BACKEND_ORIGIN__", os.environ["BACKEND_ORIGIN"]),
+              ),
+          }
+
+          for name, pairs in substitutions.items():
+              path = pathlib.Path(name)
+              text = path.read_text()
+              for placeholder, value in pairs:
+                  if placeholder not in text:
+                      sys.exit(f"{placeholder} is missing from {path}, nothing was substituted.")
+                  text = text.replace(placeholder, value)
+              path.write_text(text)
           PY
 
       - run: npm ci
