@@ -102,17 +102,20 @@ jobs:
       - name: Find the backend and the site
         id: target
         run: |
+          # One query per value: asking for a pair returns a JSON array, which tsv
+          # prints one element per line rather than as two columns, so reading it
+          # into two variables silently leaves the second one empty.
+          tagged="[?tags.project=='simplon-quiz']"
           backend=$(az webapp list \
-            --query "[?tags.component=='backend' && tags.project=='simplon-quiz'].defaultHostName | [0]" \
-            -o tsv)
-          read -r site group < <(az staticwebapp list \
-            --query "[?tags.component=='frontend' && tags.project=='simplon-quiz'].[name,resourceGroup] | [0]" \
-            -o tsv)
+            --query "${tagged} | [?tags.component=='backend'].defaultHostName | [0]" -o tsv)
+          site=$(az staticwebapp list \
+            --query "${tagged} | [?tags.component=='frontend'].name | [0]" -o tsv)
+          group=$(az staticwebapp list \
+            --query "${tagged} | [?tags.component=='frontend'].resourceGroup | [0]" -o tsv)
           vault=$(az keyvault list \
-            --query "[?tags.component=='secrets' && tags.project=='simplon-quiz'].name | [0]" \
-            -o tsv)
+            --query "${tagged} | [?tags.component=='secrets'].name | [0]" -o tsv)
 
-          for pair in "backend:$backend" "site:$site" "vault:$vault"; do
+          for pair in "backend:$backend" "site:$site" "group:$group" "vault:$vault"; do
             if [ -z "${pair#*:}" ]; then
               echo "Nothing tagged for ${pair%%:*}." >&2
               exit 1
