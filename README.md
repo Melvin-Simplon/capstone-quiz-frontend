@@ -44,9 +44,9 @@ backend API URL (`apiBaseUrl`).
 
 ## Structure
 
-- `src/app/core` — models, services (`QuizApiService` for REST calls, `QuizSessionStore` for
+- `src/app/core`: models, services (`QuizApiService` for REST calls, `QuizSessionStore` for
   signal-based quiz session state)
-- `src/app/features` — pages: `certifications` (home), `modules` (a certification's modules +
+- `src/app/features`: pages: `certifications` (home), `modules` (a certification's modules +
   starting a mock exam), `quiz` (question-by-question flow), `results` (final score)
 
 ## Out of scope for this repo
