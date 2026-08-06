@@ -211,11 +211,16 @@ jobs:
           done
           [ "$code" = "200" ] || { echo "$url answered $code" >&2; exit 1; }
 
+          # A 200 is not enough: App Service answers 200 with its own welcome page
+          # on every path until an application is deployed over it, so the answer
+          # has to be JSON for this to mean anything.
           api="${{ steps.target.outputs.api_url }}/certifications"
-          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+          type=$(curl -s -o /dev/null -w '%{content_type}' --max-time 20 \
             -H "X-Api-Key: ${API_KEY}" -H "Origin: ${url}" "$api" || true)
-          if [ "$code" != "200" ]; then
-            echo "The backend answered $code on $api with the key the site was built with." >&2
-            exit 1
-          fi
-          echo "Site up, and the backend answers it."
+          case "$type" in
+            application/json*) echo "Site up, and the backend answers it in JSON." ;;
+            *)
+              echo "The backend answered ${type:-nothing} on $api, not JSON. Is it deployed?" >&2
+              exit 1
+              ;;
+          esac
