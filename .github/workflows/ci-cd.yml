@@ -1,0 +1,232 @@
+name: ci-cd
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Named lint rather than verify because that is the check main's branch
+  # protection requires by name. It does more than lint: format and unit tests
+  # run here too.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: Unit tests
+        run: npm run test
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Scan the dependencies
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+      - name: Scan for secrets
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: secret
+          severity: MEDIUM,HIGH,CRITICAL
+          exit-code: "1"
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - uses: github/codeql-action/analyze@v3
+
+  deploy:
+    needs: [lint, security, codeql]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: nonprod
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # No client secret: the workflow proves which repository, branch and
+      # environment it runs from, and Azure hands back a token that dies with the
+      # job.
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Asked for by tag rather than written down here, so that renaming or
+      # rebuilding the infrastructure leaves this workflow untouched.
+      - name: Find the backend and the site
+        id: target
+        run: |
+          # One query per value: asking for a pair returns a JSON array, which tsv
+          # prints one element per line rather than as two columns, so reading it
+          # into two variables silently leaves the second one empty.
+          tagged="[?tags.project=='simplon-quiz']"
+          backend=$(az webapp list \
+            --query "${tagged} | [?tags.component=='backend'].defaultHostName | [0]" -o tsv)
+          site=$(az staticwebapp list \
+            --query "${tagged} | [?tags.component=='frontend'].name | [0]" -o tsv)
+          group=$(az staticwebapp list \
+            --query "${tagged} | [?tags.component=='frontend'].resourceGroup | [0]" -o tsv)
+          vault=$(az keyvault list \
+            --query "${tagged} | [?tags.component=='secrets'].name | [0]" -o tsv)
+
+          for pair in "backend:$backend" "site:$site" "group:$group" "vault:$vault"; do
+            if [ -z "${pair#*:}" ]; then
+              echo "Nothing tagged for ${pair%%:*}." >&2
+              exit 1
+            fi
+          done
+
+          echo "api_url=https://${backend}/api" >> "$GITHUB_OUTPUT"
+          echo "site=$site" >> "$GITHUB_OUTPUT"
+          echo "group=$group" >> "$GITHUB_OUTPUT"
+          echo "vault=$vault" >> "$GITHUB_OUTPUT"
+          echo "Backend https://${backend}, site ${site}"
+
+      # Reading a secret goes through the data plane, which the vault firewall
+      # filters. The door is opened for this runner and closed again below, so the
+      # allowed address never outlives the job that needed it.
+      - name: Read the API key
+        id: key
+        run: |
+          ip=$(curl -fsS https://api.ipify.org)
+          echo "runner_ip=$ip" >> "$GITHUB_OUTPUT"
+          az keyvault network-rule add --name "${{ steps.target.outputs.vault }}" \
+            --ip-address "${ip}/32" --only-show-errors >/dev/null
+          sleep 15
+
+          key=$(az keyvault secret show --vault-name "${{ steps.target.outputs.vault }}" \
+            --name backend-api-key --query value -o tsv)
+          echo "::add-mask::$key"
+          echo "value=$key" >> "$GITHUB_OUTPUT"
+
+      - name: Close the vault again
+        if: always() && steps.key.outputs.runner_ip != ''
+        run: |
+          az keyvault network-rule remove --name "${{ steps.target.outputs.vault }}" \
+            --ip-address "${{ steps.key.outputs.runner_ip }}/32" --only-show-errors >/dev/null
+
+      # A static site has no runtime, so what a server would read from its
+      # environment has to be baked in here, on the runner, and never committed.
+      - name: Point the build at the backend
+        env:
+          API_URL: ${{ steps.target.outputs.api_url }}
+          API_KEY: ${{ steps.key.outputs.value }}
+        run: |
+          file=src/environments/environment.ts
+          python3 - "$file" <<'PY'
+          import os, sys, pathlib
+
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text()
+          for placeholder, value in (
+              ("https://REPLACE_WITH_PROD_API_URL/api", os.environ["API_URL"]),
+              ("__BACKEND_API_KEY__", os.environ["API_KEY"]),
+          ):
+              if placeholder not in text:
+                  sys.exit(f"{placeholder} is missing from {path}, nothing was substituted.")
+              text = text.replace(placeholder, value)
+          path.write_text(text)
+          PY
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build:prod
+
+      - name: Read the deployment token
+        id: swa
+        run: |
+          token=$(az staticwebapp secrets list --name "${{ steps.target.outputs.site }}" \
+            --resource-group "${{ steps.target.outputs.group }}" \
+            --query properties.apiKey -o tsv)
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the site
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.swa.outputs.token }}
+          action: upload
+          app_location: dist/azure-quiz-frontend/browser
+          skip_app_build: true
+          skip_api_build: true
+
+      # Serving the site proves nothing about it being able to reach the backend,
+      # which is the pair of settings this job just baked in.
+      - name: Check the site and the path to the backend
+        env:
+          API_KEY: ${{ steps.key.outputs.value }}
+        run: |
+          url="https://$(az staticwebapp show --name "${{ steps.target.outputs.site }}" \
+            --resource-group "${{ steps.target.outputs.group }}" \
+            --query defaultHostname -o tsv)"
+
+          for attempt in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$url" || true)
+            [ "$code" = "200" ] && break
+            sleep 10
+          done
+          [ "$code" = "200" ] || { echo "$url answered $code" >&2; exit 1; }
+
+          # A 200 is not enough: App Service answers 200 with its own welcome page
+          # on every path until an application is deployed over it, so the answer
+          # has to be JSON for this to mean anything.
+          api="${{ steps.target.outputs.api_url }}/certifications"
+          type=$(curl -s -o /dev/null -w '%{content_type}' --max-time 20 \
+            -H "X-Api-Key: ${API_KEY}" -H "Origin: ${url}" "$api" || true)
+          case "$type" in
+            application/json*) echo "Site up, and the backend answers it in JSON." ;;
+            *)
+              echo "The backend answered ${type:-nothing} on $api, not JSON. Is it deployed?" >&2
+              exit 1
+              ;;
+          esac

@@ -1,22 +1,53 @@
 version: 2
 updates:
+  # Angular publishes its packages as a locked set: @angular/animations@X.Y.Z
+  # peer-depends on @angular/core@X.Y.Z exactly. Bumping them in separate PRs
+  # makes `npm ci` fail on peer resolution, so they must travel together.
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+      time: '06:00'
+      timezone: Europe/Paris
     target-branch: develop
     open-pull-requests-limit: 5
+    groups:
+      angular:
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - 'angular-eslint'
+      production-dependencies:
+        dependency-type: production
+        patterns:
+          - '*'
+      development-dependencies:
+        dependency-type: development
+        patterns:
+          - '*'
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+      time: '06:00'
+      timezone: Europe/Paris
     target-branch: develop
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - '*'
 
   - package-ecosystem: docker
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+      time: '06:00'
+      timezone: Europe/Paris
     target-branch: develop
     open-pull-requests-limit: 5
+    groups:
+      docker-images:
+        patterns:
+          - '*'
