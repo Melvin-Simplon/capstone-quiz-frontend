@@ -1,54 +1,99 @@
-# azure-quiz-frontend
+# Azure Quiz Frontend
 
-Angular application to review Microsoft certifications (AZ-900 to start, AZ-104 next): review by
-module or mock exam, accessible from a simple link (no account). Consumes the REST API of
-[azure-quiz-backend](../azure-quiz-backend).
+[![ci-cd](https://github.com/WhiteMuush/simplon-quiz-frontend-bilan/actions/workflows/ci-cd.yml/badge.svg?branch=main)](https://github.com/WhiteMuush/simplon-quiz-frontend-bilan/actions/workflows/ci-cd.yml)
+[![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)](package.json)
+[![Node](https://img.shields.io/badge/Node-25-339933?logo=nodedotjs&logoColor=white)](.nvmrc)
+[![Vitest](https://img.shields.io/badge/tests-Vitest-6E9F18?logo=vitest&logoColor=white)](package.json)
+[![Hosting](https://img.shields.io/badge/hosting-Static%20Web%20Apps-0078D4?logo=microsoftazure&logoColor=white)](#deployment)
+[![Deploy](https://img.shields.io/badge/deploy-OIDC%2C%20no%20stored%20secret-2EA043)](#deployment)
 
+Angular application for revising Microsoft certifications, by module or by mock exam, reachable
+from a plain link with no account to create. It consumes the REST API of the backend.
+
+| | |
+| --- | --- |
+| Application | <https://kind-ocean-089457b03.7.azurestaticapps.net> |
+| Backend | [simplon-quiz-backend-bilan](https://github.com/WhiteMuush/simplon-quiz-backend-bilan) |
+| Infrastructure | [simplon-quiz-infrastructure-bilan](https://github.com/WhiteMuush/simplon-quiz-infrastructure-bilan) |
+
+---
 
 ## Stack
 
-- Angular 22 (standalone components, signals), Angular Material, ngx-translate (fr/en)
-- Vitest (Angular CLI 22 native test runner)
-- ESLint (`angular-eslint`) + Prettier, husky + lint-staged on pre-commit
+- Angular 22, standalone components and signals, Angular Material, ngx-translate for French and
+  English
+- Vitest, the Angular CLI 22 native test runner, on jsdom
+- ESLint and Prettier, with husky and lint-staged on pre-commit
 
-## Run locally
+## Running locally
 
-Prerequisites: Node 22+, and the backend (`azure-quiz-backend`) running on `http://localhost:8080`.
+Prerequisites: the Node version in [`.nvmrc`](.nvmrc), and the backend answering on
+`http://localhost:8080`.
 
 ```bash
 npm install
-npm start   # http://localhost:4200, targets the API on localhost:8080 (see src/environments/environment.development.ts)
+npm start
 ```
 
-## Tests and quality
+The application serves on `http://localhost:4200` and targets the local API, see
+`src/environments/environment.development.ts`. The API key is empty there, which is what switches
+the backend's check off in local development.
 
 ```bash
-npm test           # Vitest
+npm test
 npm run test:coverage
 npm run lint
 npm run format:check
 ```
 
-## Production build
+## Structure
+
+| Path | Holds |
+| --- | --- |
+| `src/app/core` | models, `QuizApiService` for the REST calls, `QuizSessionStore` for signal based session state |
+| `src/app/features` | the four pages: certifications, modules, quiz, results |
+| `src/environments` | the two placeholders the deployment substitutes |
+
+## Building
 
 ```bash
 npm run build:prod
 ```
 
-Static output in `dist/azure-quiz-frontend/browser` (that's the folder to point to as
-`output_location` when deploying to Azure Static Web Apps).
+The static output lands in `dist/azure-quiz-frontend/browser`, which is the folder deployed to
+Static Web Apps.
 
-Before building for a real deployment, update `src/environments/environment.ts` with the deployed
-backend API URL (`apiBaseUrl`).
+`src/environments/environment.ts` holds two placeholders rather than values:
+`REPLACE_WITH_PROD_API_URL` and `__BACKEND_API_KEY__`. They are substituted on the CI runner, at
+deployment time. Neither a URL nor a key is ever committed here.
 
+## Deployment
 
-## Structure
+Merging into `main` runs [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml): lint, format
+check and unit tests, dependency and secret scanning, CodeQL, then the deployment, which waits on
+all three.
 
-- `src/app/core` — models, services (`QuizApiService` for REST calls, `QuizSessionStore` for
-  signal-based quiz session state)
-- `src/app/features` — pages: `certifications` (home), `modules` (a certification's modules +
-  starting a mock exam), `quiz` (question-by-question flow), `results` (final score)
+A static site has no runtime, so what a server would read from its environment has to be baked into
+the build. The deployment therefore:
 
-## Out of scope for this repo
+1. resolves the backend URL and the site by their `component` tags, never by a name written here
+2. opens the Key Vault firewall for its own address, reads the API key, and closes it again
+   whatever happens next
+3. substitutes the two placeholders, on the runner
+4. builds, then reads the Static Web Apps deployment token through the Azure CLI rather than
+   storing it as a repository secret
+5. calls `GET /api/certifications` through the key it just baked in, and fails unless the answer is
+   JSON
 
-- Provisioning the Azure infrastructure (Static Web App, App Service, database).
+Both secrets are masked in the logs.
+
+**The API key is readable in the shipped bundle.** That is what static hosting means: the key
+identifies this frontend to the backend, it authenticates nobody. It is documented as a deliberate
+trade-off in
+[ADR 0003](https://github.com/WhiteMuush/simplon-quiz-infrastructure-bilan/blob/main/docs/adr/0003-public-backend-with-api-key.md),
+along with the arrangement that should replace it in
+[ADR 0011](https://github.com/WhiteMuush/simplon-quiz-infrastructure-bilan/blob/main/docs/adr/0011-linked-backend-not-taken.md).
+
+## Out of scope
+
+Provisioning the Azure resources, which lives in the infrastructure repository.
