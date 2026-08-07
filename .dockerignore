@@ -1,9 +1,0 @@
-node_modules/
-dist/
-.git/
-.github/
-.idea/
-.vscode/
-helm/
-coverage/
-*.md
