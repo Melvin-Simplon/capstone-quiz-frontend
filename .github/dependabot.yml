@@ -38,16 +38,3 @@ updates:
       github-actions:
         patterns:
           - '*'
-
-  - package-ecosystem: docker
-    directory: /
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: Europe/Paris
-    target-branch: develop
-    open-pull-requests-limit: 5
-    groups:
-      docker-images:
-        patterns:
-          - '*'
