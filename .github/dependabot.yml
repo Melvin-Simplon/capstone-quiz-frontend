@@ -25,6 +25,12 @@ updates:
         dependency-type: development
         patterns:
           - '*'
+    # @angular/build pins its peer to typescript ">=6.0 <6.1", so a major bump
+    # cannot install at all: npm ci stops on the peer conflict and takes the
+    # whole development group down with it. Angular decides when this moves.
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /
