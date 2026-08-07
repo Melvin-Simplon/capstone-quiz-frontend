@@ -207,6 +207,56 @@ jobs:
       - name: Build
         run: npm run build:prod
 
+      # Static Web Apps applies the policy when it serves the page, and nothing
+      # else does: ng serve sends no headers, so a document the browser will
+      # refuse still passes every build and every test. This reads the policy the
+      # site is about to send and checks the built document against it.
+      - name: Check the build against the policy
+        run: |
+          python3 <<'PY'
+          import json, pathlib, re, sys
+          from urllib.parse import urlparse
+
+          config = json.loads(pathlib.Path("public/staticwebapp.config.json").read_text())
+          policy = config["globalHeaders"]["Content-Security-Policy"]
+          directives = {
+              parts[0]: parts[1:]
+              for parts in (d.split() for d in policy.split(";") if d.strip())
+          }
+
+          document = pathlib.Path("dist/azure-quiz-frontend/browser/index.html").read_text()
+          refused = []
+
+          # An onload or onerror attribute is script the policy has no way to
+          # tell apart from an injection, so it never runs. Angular writes one
+          # when it defers the stylesheet, which silently costs the whole sheet.
+          if "'unsafe-inline'" not in directives.get("script-src", []):
+              for handler in re.findall(r'\son[a-z]+\s*=\s*"[^"]*"', document):
+                  refused.append(f"inline event handler: {handler.strip()}")
+              for opening, body in re.findall(r"<script([^>]*)>(.*?)</script>", document, re.S):
+                  if "src=" not in opening and body.strip():
+                      refused.append("inline script body")
+
+          allowed = {
+              host
+              for values in directives.values()
+              for host in values
+              if host.startswith("http")
+          }
+          for url in re.findall(r'(?:href|src)="(https?://[^"]+)"', document):
+              origin = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+              if origin not in allowed:
+                  refused.append(f"no directive allows {origin}: {url}")
+
+          if refused:
+              print("The document breaks the policy it will be served with:\n")
+              for line in refused:
+                  print(f"  {line}")
+              sys.exit(1)
+
+          print("The built document holds nothing the policy refuses.")
+          PY
+
       - name: Read the deployment token
         id: swa
         run: |
