@@ -1,0 +1,33 @@
+# The CD entry point. Waits for ci to finish rather than depending on its jobs:
+# needs: does not reach across workflow files, so this is how the gate survives
+# the split.
+name: cd
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    # Only what landed on main. A ci run on a pull request finishes too.
+    branches: [main]
+  # Triggered by hand, and by the Makefile in the infrastructure repository.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # workflow_run fires whatever the outcome, a failed ci included, so the
+    # conclusion is checked here. Without this the split would silently remove
+    # the guard that needs: used to provide.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/cd-deploy.yml

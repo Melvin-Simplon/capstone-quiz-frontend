@@ -1,0 +1,97 @@
+# Builds the site with the values it can only know at deploy time, uploads it,
+# and checks that it answers and that the backend answers it.
+#
+# Called from cd.yml. It carries no trigger and no condition of its own: what
+# decides whether a deployment happens lives there.
+#
+# Every step calls a script under scripts/workflows/deploy. Nothing but the
+# wiring lives here, so each piece can be read, run and debugged on its own.
+name: cd-deploy
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: nonprod
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # No client secret: the workflow proves which repository, branch and
+      # environment it runs from, and Azure hands back a token that dies with
+      # the job.
+      - name: Sign in to Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Find the backend and the site
+        id: target
+        run: scripts/workflows/deploy/find-targets.sh
+
+      - name: Read the API key
+        id: key
+        env:
+          VAULT: ${{ steps.target.outputs.vault }}
+        run: scripts/workflows/deploy/read-api-key.sh
+
+      - name: Close the vault again
+        if: always() && steps.key.outputs.runner_ip != ''
+        env:
+          VAULT: ${{ steps.target.outputs.vault }}
+          RUNNER_IP: ${{ steps.key.outputs.runner_ip }}
+        run: scripts/workflows/deploy/close-the-vault.sh
+
+      - name: Point the build at the backend
+        env:
+          API_URL: ${{ steps.target.outputs.api_url }}
+          API_KEY: ${{ steps.key.outputs.value }}
+          BACKEND_ORIGIN: ${{ steps.target.outputs.backend_origin }}
+        run: python3 scripts/workflows/deploy/point-the-build-at-the-backend.py
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build:prod
+
+      - name: Check the build against the policy
+        run: python3 scripts/workflows/deploy/check-the-build-against-the-policy.py
+
+      - name: Read the deployment token
+        id: swa
+        env:
+          SITE: ${{ steps.target.outputs.site }}
+          GROUP: ${{ steps.target.outputs.group }}
+        run: scripts/workflows/deploy/read-deployment-token.sh
+
+      - name: Upload the site
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.swa.outputs.token }}
+          action: upload
+          app_location: dist/azure-quiz-frontend/browser
+          skip_app_build: true
+          skip_api_build: true
+
+      - name: Check the site and the path to the backend
+        env:
+          SITE: ${{ steps.target.outputs.site }}
+          GROUP: ${{ steps.target.outputs.group }}
+          API_URL: ${{ steps.target.outputs.api_url }}
+          API_KEY: ${{ steps.key.outputs.value }}
+        run: scripts/workflows/deploy/check-the-site.sh
