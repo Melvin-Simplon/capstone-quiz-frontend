@@ -1,0 +1,37 @@
+# Lint, formatting and unit tests.
+#
+# Called from ci.yml. GitHub Actions cannot nest workflow files in folders,
+# so the ci- and cd- prefixes stand in for the two directories this would
+# otherwise live in.
+name: ci-lint
+
+on:
+  workflow_call:
+  # Runnable on its own while working on it, without opening a pull request.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: Unit tests
+        run: npm run test
