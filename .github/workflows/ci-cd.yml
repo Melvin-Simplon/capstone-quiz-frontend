@@ -5,6 +5,10 @@ on:
     branches: [develop, main]
   push:
     branches: [main]
+  # Triggered by hand, and by the Makefile in the infrastructure repository.
+  # A manual run here can only mean one thing, deploy what is on the branch,
+  # so it takes no input.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -89,7 +93,7 @@ jobs:
 
   deploy:
     needs: [lint, security, codeql]
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: nonprod
     permissions:
