@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Puts the ZAP findings on the run's summary page, because the raw report is an
+# ZAP's findings on the run's summary page, because the raw report is an
 # artifact nobody downloads.
 
 set -euo pipefail
@@ -11,44 +11,32 @@ source "${HERE}/lib.sh"
 readonly RECAP_NAME="summarise-the-zap-report"
 readonly REPORT="${REPORT:-report_md.md}"
 readonly TARGET="${TARGET:?}"
+readonly RUN_URL="${RUN_URL:-}"
 
-write() {
-    [[ -n "${GITHUB_STEP_SUMMARY:-}" ]] || return 0
-    cat >> "$GITHUB_STEP_SUMMARY"
+# ZAP counts its own alerts in a table. Reading the cell beats recounting them.
+alerts() {
+    awk -F'|' -v level="$1" '$2 ~ "^ *"level" *$" { gsub(/ /, "", $3); print $3; exit }' "$REPORT"
 }
 
-counts() {
-    local level="$1"
-    grep -c "^| ${level} |" "$REPORT" 2>/dev/null || printf '0'
+status() {
+    [[ "$(alerts High)" == "0" ]] && printf 'ok' || printf 'failed'
 }
 
-heading() {
-    write <<HEADER
-## DAST : OWASP ZAP baseline
-
-Scanned \`${TARGET}\` after deployment. Passive only: a static site has no form
-to fuzz, so what this looks at is the response headers.
-
-| Level | Alerts |
-| --- | --- |
-| High | $(counts High) |
-| Medium | $(counts Medium) |
-| Low | $(counts Low) |
-| Informational | $(counts Informational) |
-
-HEADER
+figures() {
+    printf '%s High, %s Medium, %s Low, %s Informational on %s' \
+        "$(alerts High)" "$(alerts Medium)" "$(alerts Low)" "$(alerts Informational)" "$TARGET"
 }
 
-body() {
-    write <<'OPEN'
-<details><summary>Full ZAP report</summary>
+table() {
+    sed -n '/^| Risk Level | Number of Alerts |/,/^$/p' "$REPORT"
+}
 
-OPEN
-    write < "$REPORT"
-    write <<'CLOSE'
+report() {
+    summary "DAST" "OWASP ZAP baseline" "$(status)" "$(figures)" <<TABLE
+$(table)
 
-</details>
-CLOSE
+[Full report in the zap-baseline-report artifact](${RUN_URL})
+TABLE
 }
 
 main() {
@@ -56,13 +44,10 @@ main() {
 
     if [[ ! -f "$REPORT" ]]; then
         report_unreachable "zap" "${REPORT} was never written, nothing to summarise"
-        recap "$RECAP_NAME"
-        return 0
+    else
+        report
+        report_ok "zap" "findings written to the run summary"
     fi
-
-    heading
-    body
-    report_ok "zap" "findings written to the run summary"
 
     recap "$RECAP_NAME"
 }

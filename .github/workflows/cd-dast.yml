@@ -44,6 +44,7 @@ jobs:
         if: always()
         env:
           TARGET: ${{ inputs.site_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: scripts/workflows/security/summarise-the-zap-report.sh
 
       - name: Check the declared security headers are served
