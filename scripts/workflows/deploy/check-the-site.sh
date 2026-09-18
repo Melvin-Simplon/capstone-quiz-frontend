@@ -61,6 +61,14 @@ check_backend_answers_json() {
     esac
 }
 
+# The DAST job needs somewhere to point, and this is where the hostname is
+# already resolved. Silent when there is no GITHUB_OUTPUT, so the script still
+# runs by hand.
+emit() {
+    [[ -n "${GITHUB_OUTPUT:-}" ]] || return 0
+    printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"
+}
+
 main() {
     task "${SITE} : the site answers, and the backend answers it"
 
@@ -68,6 +76,7 @@ main() {
     if ! url=$(site_url); then
         die "$SITE" "the static web app has no hostname yet"
     fi
+    emit url "$url"
 
     if wait_for_site "$url"; then
         check_backend_answers_json "$url" || true
