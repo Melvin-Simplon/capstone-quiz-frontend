@@ -1,0 +1,47 @@
+# SonarCloud analysis, coverage included.
+#
+# Called from ci.yml. GitHub Actions cannot nest workflow files in folders,
+# so the ci- and cd- prefixes stand in for the two directories this would
+# otherwise live in.
+#
+# The tests run here rather than being taken from ci-lint: coverage is a file
+# on disk, and nothing carries it between two workflows.
+name: ci-sonar
+
+on:
+  workflow_call:
+    secrets:
+      SONAR_TOKEN:
+        required: true
+  # Runnable on its own while working on it, without opening a pull request.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Full history: Sonar dates an issue from the commit that introduced it,
+      # and a shallow clone leaves it nothing to read, so everything lands in
+      # New Code and the quality gate judges the whole repository as new.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - name: Test with coverage
+        run: npm run test:coverage
+
+      - name: Analyse
+        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
