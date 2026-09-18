@@ -30,6 +30,10 @@ jobs:
     uses: ./.github/workflows/ci-secrets.yml
 
   sca:
+    # dependency-review posts its findings on the pull request.
+    permissions:
+      contents: read
+      pull-requests: write
     uses: ./.github/workflows/ci-sca.yml
 
   a11y:
