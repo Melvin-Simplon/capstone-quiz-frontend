@@ -35,8 +35,13 @@ stop() {
 }
 trap stop EXIT
 
+# The chromedriver npm package resolves a version of its own, which rarely
+# matches the Chrome on the runner. GitHub ships both, assorted, under
+# CHROMEWEBDRIVER.
 scan() {
-    npx --yes @axe-core/cli "$URL" --exit --save "$REPORT" --stdout
+    local driver=()
+    [[ -n "${CHROMEWEBDRIVER:-}" ]] && driver=(--chromedriver-path "${CHROMEWEBDRIVER}/chromedriver")
+    npx --yes @axe-core/cli "$URL" --exit --save "$REPORT" --stdout "${driver[@]}"
 }
 
 violations() {
