@@ -16,7 +16,7 @@ install_gitleaks() {
     task "gitleaks ${GITLEAKS_VERSION} : install"
     local url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
 
-    if ! curl -sSfL "$url" | tar -xz gitleaks; then
+    if ! curl -sSfL --proto '=https' --proto-redir '=https' "$url" | tar -xz gitleaks; then
         report_unreachable "github.com" "could not fetch gitleaks ${GITLEAKS_VERSION}"
         return 1
     fi
