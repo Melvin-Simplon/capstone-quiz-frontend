@@ -3,7 +3,7 @@
 # Called from ci.yml. GitHub Actions cannot nest workflow files in folders,
 # so the ci- and cd- prefixes stand in for the two directories this would
 # otherwise live in.
-name: ci-codeql
+name: SAST
 
 on:
   workflow_call:
@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   codeql:
+    name: CodeQL
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

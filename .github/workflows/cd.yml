@@ -1,11 +1,11 @@
-# The CD entry point. Waits for ci to finish rather than depending on its jobs:
+# The CD entry point. Waits for CI to finish rather than depending on its jobs:
 # needs: does not reach across workflow files, so this is how the gate survives
 # the split.
-name: cd
+name: CD
 
 on:
   workflow_run:
-    workflows: [ci]
+    workflows: [CI]
     types: [completed]
     # Only what landed on main. A ci run on a pull request finishes too.
     branches: [main]

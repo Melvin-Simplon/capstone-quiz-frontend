@@ -74,6 +74,19 @@ recap() {
     [[ "$RECAP_FAILED" -eq 0 && "$RECAP_UNREACHABLE" -eq 0 ]]
 }
 
+# One shape for every job's summary page: the category, the tool, an Ansible
+# status word, and the numbers that answer the question the job was asked.
+# Silent outside Actions, so the scripts still run by hand.
+summary() {
+    local category="$1" tool="$2" status="$3" figures="$4"
+    [[ -n "${GITHUB_STEP_SUMMARY:-}" ]] || return 0
+    {
+        printf '## %s : %s\n\n' "$category" "$tool"
+        printf '**%s** : %s\n\n' "$status" "$figures"
+        cat
+    } >> "$GITHUB_STEP_SUMMARY"
+}
+
 # Reports and stops. For the case where continuing makes no sense.
 die() {
     local host="$1"; shift

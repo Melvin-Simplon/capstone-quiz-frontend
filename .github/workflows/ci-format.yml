@@ -1,7 +1,7 @@
-# ESLint.
+# Prettier.
 #
 # Called from ci.yml.
-name: Lint
+name: Format
 
 on:
   workflow_call:
@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    name: ESLint
+  format:
+    name: Prettier
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -20,5 +20,5 @@ jobs:
 
       - uses: ./.github/actions/setup-node-app
 
-      - name: ESLint
-        run: npm run lint
+      - name: Prettier
+        run: npm run format:check

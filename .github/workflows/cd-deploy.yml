@@ -6,7 +6,7 @@
 #
 # Every step calls a script under scripts/workflows/deploy. Nothing but the
 # wiring lives here, so each piece can be read, run and debugged on its own.
-name: cd-deploy
+name: Deploy
 
 on:
   workflow_call:
@@ -21,6 +21,7 @@ permissions:
 
 jobs:
   deploy:
+    name: Static Web Apps
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: nonprod

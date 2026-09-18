@@ -6,7 +6,7 @@
 #
 # The tests run here rather than being taken from ci-lint: coverage is a file
 # on disk, and nothing carries it between two workflows.
-name: ci-sonar
+name: Quality
 
 on:
   workflow_call:
@@ -21,6 +21,7 @@ permissions:
 
 jobs:
   sonar:
+    name: SonarCloud
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -33,8 +34,19 @@ jobs:
 
       - uses: ./.github/actions/setup-node-app
 
+      # github-actions puts a failure on the diff at the line that failed;
+      # default keeps the table in the log; json feeds the summary below.
       - name: Test with coverage
-        run: npm run test:coverage
+        run: >
+          npm run test:coverage --
+          --reporters=json --reporters=default --reporters=github-actions
+          --output-file=test-results.json
+
+      - name: Put the tests and the coverage on the summary page
+        if: always()
+        env:
+          PULL_REQUEST: ${{ github.event.number }}
+        run: scripts/workflows/ci/summarise-the-quality-report.sh
 
       # Dependabot runs are handed a separate, empty secret store, so SONAR_TOKEN
       # arrives blank and the scanner answers "Not authorized" on a branch that

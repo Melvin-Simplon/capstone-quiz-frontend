@@ -3,7 +3,7 @@
 # It scans the deployed site rather than a build served on the runner: the
 # security headers live in staticwebapp.config.json and are applied by Static
 # Web Apps, so a local server would report all of them missing.
-name: cd-dast
+name: DAST
 
 on:
   workflow_call:
@@ -24,6 +24,7 @@ permissions:
 
 jobs:
   dast:
+    name: OWASP ZAP
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -44,6 +45,7 @@ jobs:
         if: always()
         env:
           TARGET: ${{ inputs.site_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: scripts/workflows/security/summarise-the-zap-report.sh
 
       - name: Check the declared security headers are served
