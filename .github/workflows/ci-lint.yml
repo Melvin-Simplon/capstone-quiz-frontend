@@ -1,7 +1,7 @@
 # ESLint.
 #
 # Called from ci.yml.
-name: ci-lint
+name: Lint
 
 on:
   workflow_call:
@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   lint:
+    name: ESLint
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

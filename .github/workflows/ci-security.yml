@@ -3,7 +3,7 @@
 # Called from ci.yml. GitHub Actions cannot nest workflow files in folders,
 # so the ci- and cd- prefixes stand in for the two directories this would
 # otherwise live in.
-name: ci-security
+name: Security
 
 on:
   workflow_call:
@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   security:
+    name: gitleaks and Trivy
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

@@ -6,7 +6,7 @@
 #
 # The tests run here rather than being taken from ci-lint: coverage is a file
 # on disk, and nothing carries it between two workflows.
-name: ci-sonar
+name: Quality
 
 on:
   workflow_call:
@@ -21,6 +21,7 @@ permissions:
 
 jobs:
   sonar:
+    name: SonarCloud
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
