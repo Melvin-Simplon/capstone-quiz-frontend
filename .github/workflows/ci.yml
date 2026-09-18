@@ -35,11 +35,11 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: ./.github/workflows/ci-codeql.yml
+    uses: ./.github/workflows/ci-sast.yml
 
   quality:
     # secrets: inherit would hand the called workflow every secret this
     # repository holds. It needs one.
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    uses: ./.github/workflows/ci-sonar.yml
+    uses: ./.github/workflows/ci-quality.yml
