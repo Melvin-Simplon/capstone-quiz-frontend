@@ -32,6 +32,9 @@ jobs:
   sca:
     uses: ./.github/workflows/ci-sca.yml
 
+  a11y:
+    uses: ./.github/workflows/ci-a11y.yml
+
   sast:
     # A called workflow cannot hold more than its caller grants it, so the
     # right to write findings to the Security tab is granted here.
