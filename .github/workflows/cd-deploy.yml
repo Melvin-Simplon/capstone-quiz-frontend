@@ -64,7 +64,7 @@ jobs:
           BACKEND_ORIGIN: ${{ steps.target.outputs.backend_origin }}
         run: python3 scripts/workflows/deploy/point-the-build-at-the-backend.py
 
-      - run: npm ci
+      - run: npm ci --ignore-scripts
 
       - name: Build
         run: npm run build:prod
