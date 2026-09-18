@@ -11,6 +11,25 @@ permissions:
   contents: read
 
 jobs:
+  # Trivy answers "do the dependencies we have carry known CVEs". This answers
+  # "does this pull request add one", which a scan of the current lockfile
+  # cannot: a vulnerable package already present makes both look the same.
+  review:
+    name: dependency-review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
   sca:
     name: Trivy
     runs-on: ubuntu-latest

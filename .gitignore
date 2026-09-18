@@ -47,3 +47,4 @@ Thumbs.db
 __pycache__/
 *.pyc
 /test-results.json
+/axe-results.json

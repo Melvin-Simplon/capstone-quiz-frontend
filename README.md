@@ -1,6 +1,9 @@
 # Azure Quiz Frontend
 
-[![ci-cd](https://github.com/WhiteMuush/simplon-quiz-frontend-bilan/actions/workflows/ci-cd.yml/badge.svg?branch=main)](https://github.com/WhiteMuush/simplon-quiz-frontend-bilan/actions/workflows/ci-cd.yml)
+[![CI](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/ci.yml)
+[![CD](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/cd.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=Melvin-Simplon_capstone-quiz-frontend&metric=alert_status)](https://sonarcloud.io/dashboard?id=Melvin-Simplon_capstone-quiz-frontend)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Melvin-Simplon_capstone-quiz-frontend&metric=coverage)](https://sonarcloud.io/dashboard?id=Melvin-Simplon_capstone-quiz-frontend)
 [![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)](package.json)
 [![Node](https://img.shields.io/badge/Node-25-339933?logo=nodedotjs&logoColor=white)](.nvmrc)
 [![Vitest](https://img.shields.io/badge/tests-Vitest-6E9F18?logo=vitest&logoColor=white)](package.json)
@@ -12,9 +15,24 @@ from a plain link with no account to create. It consumes the REST API of the bac
 
 | | |
 | --- | --- |
-| Application | <https://kind-ocean-089457b03.7.azurestaticapps.net> |
-| Backend | [simplon-quiz-backend-bilan](https://github.com/WhiteMuush/simplon-quiz-backend-bilan) |
-| Infrastructure | [simplon-quiz-infrastructure-bilan](https://github.com/WhiteMuush/simplon-quiz-infrastructure-bilan) |
+| Application | <https://witty-beach-0ed541703.2.azurestaticapps.net> |
+| Backend | [capstone-quiz-backend](https://github.com/Melvin-Simplon/capstone-quiz-backend) |
+| Infrastructure | [capstone-quiz-infrastructure](https://github.com/Melvin-Simplon/capstone-quiz-infrastructure) |
+
+---
+
+## Documentation
+
+The [**wiki**](https://github.com/Melvin-Simplon/capstone-quiz-frontend/wiki) carries the
+reasoning this file does not.
+
+| Page | What it answers |
+| --- | --- |
+| [Security pipeline](https://github.com/Melvin-Simplon/capstone-quiz-frontend/wiki/Security-pipeline) | the six scanning categories, the tool chosen for each, and why |
+| [Pipeline reference](https://github.com/Melvin-Simplon/capstone-quiz-frontend/wiki/Pipeline-reference) | every workflow, its trigger, and the check it produces |
+| [Deployment](https://github.com/Melvin-Simplon/capstone-quiz-frontend/wiki/Deployment) | OIDC, tag-based discovery, the Key Vault door, the checks after the upload |
+| [Decisions](https://github.com/Melvin-Simplon/capstone-quiz-frontend/wiki/Decisions) | the choices that are not obvious from the code, and what they cost |
+| [Troubleshooting](https://github.com/Melvin-Simplon/capstone-quiz-frontend/wiki/Troubleshooting) | failures this repository has had, most of them silent |
 
 ---
 
