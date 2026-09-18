@@ -26,8 +26,11 @@ jobs:
   format:
     uses: ./.github/workflows/ci-format.yml
 
-  security:
-    uses: ./.github/workflows/ci-security.yml
+  secrets:
+    uses: ./.github/workflows/ci-secrets.yml
+
+  sca:
+    uses: ./.github/workflows/ci-sca.yml
 
   sast:
     # A called workflow cannot hold more than its caller grants it, so the
