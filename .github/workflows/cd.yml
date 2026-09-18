@@ -32,10 +32,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/cd-deploy.yml
 
-  # Separate job rather than a step of the deployment: what it scans is the
-  # site as served, so it has nothing to do with the runner that built it, and
-  # a failure here should read as "the deployment is wrong", not "the upload
-  # failed".
+  # Separate job: a failure here means the deployment is wrong, not the upload.
   dast:
     needs: deploy
     uses: ./.github/workflows/cd-dast.yml

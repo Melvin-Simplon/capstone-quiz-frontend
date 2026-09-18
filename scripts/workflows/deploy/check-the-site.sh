@@ -61,9 +61,7 @@ check_backend_answers_json() {
     esac
 }
 
-# The DAST job needs somewhere to point, and this is where the hostname is
-# already resolved. Silent when there is no GITHUB_OUTPUT, so the script still
-# runs by hand.
+# Silent without GITHUB_OUTPUT, so the script still runs by hand.
 emit() {
     [[ -n "${GITHUB_OUTPUT:-}" ]] || return 0
     printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"

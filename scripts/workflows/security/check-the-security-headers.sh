@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
-# The gate ZAP cannot be trusted to be: every header this site declares in
-# staticwebapp.config.json has to come back on a real request.
-#
-# ZAP reports what it happens to have a passive rule for, and it has none for
-# Referrer-Policy. This reads the configuration and asks for exactly what is in
-# it, so adding a header there extends the check for free.
+# Every header declared in staticwebapp.config.json has to come back on a real
+# request. Reading the configuration rather than a fixed list means adding a
+# header there extends the check for free.
 
 set -euo pipefail
 
@@ -16,7 +13,6 @@ readonly RECAP_NAME="check-the-security-headers"
 readonly SITE_URL="${SITE_URL:?}"
 readonly CONFIG="public/staticwebapp.config.json"
 
-# stdout carries one header name per line.
 declared_headers() {
     python3 -c "
 import json, sys
@@ -26,7 +22,6 @@ for name in config.get('globalHeaders', {}):
 "
 }
 
-# stdout carries the response headers, lowercased.
 fetch_headers() {
     curl -sSI --max-time 20 "$SITE_URL" | tr '[:upper:]' '[:lower:]'
 }
