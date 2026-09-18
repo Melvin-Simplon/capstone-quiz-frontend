@@ -1,0 +1,32 @@
+# The Node setup every workflow in this repository needs, in one place.
+#
+# It deliberately leaves the checkout out. A local action is read from the
+# working directory, so actions/checkout has to have run before this file
+# exists on the runner at all: putting the checkout in here would mean the
+# action could never be the step that provides it.
+#
+# What this does buy is that .nvmrc, the npm cache and --ignore-scripts are
+# decided once. The flag in particular is a security decision, and one that
+# silently stops applying the day someone adds a workflow and forgets it.
+name: Set up Node and install
+description: Reads the Node version from .nvmrc, restores the npm cache and installs the locked dependencies.
+
+inputs:
+  install:
+    description: Set to false to configure Node without installing anything.
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version-file: .nvmrc
+        cache: npm
+
+    # Lifecycle scripts stay off: npm ci would otherwise run every postinstall
+    # in the tree with the job's credentials.
+    - if: inputs.install == 'true'
+      shell: bash
+      run: npm ci --ignore-scripts
