@@ -10,6 +10,11 @@ name: cd-deploy
 
 on:
   workflow_call:
+    # A job-level output alone does not leave a reusable workflow: the caller
+    # reads what is declared here.
+    outputs:
+      site_url:
+        value: ${{ jobs.deploy.outputs.site_url }}
 
 permissions:
   contents: read
@@ -19,8 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: nonprod
-    # Handed to the DAST job: the hostname is resolved once, here, rather than
-    # queried again from a job that would need its own Azure session for it.
     outputs:
       site_url: ${{ steps.site.outputs.url }}
     permissions:

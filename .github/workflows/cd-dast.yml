@@ -1,11 +1,8 @@
-# DAST: the site is attacked over HTTP, as it runs, from outside.
+# DAST. Called from cd.yml once the deployment has answered.
 #
-# Called from cd.yml once the deployment has answered. Scanning a build served
-# locally would prove nothing here: the security headers live in
-# staticwebapp.config.json and are applied by Static Web Apps, so a plain static
-# server would report all of them missing. The deployed site is the only target
-# that tells the truth, and it is the one place that proves Azure is really
-# applying that file.
+# It scans the deployed site rather than a build served on the runner: the
+# security headers live in staticwebapp.config.json and are applied by Static
+# Web Apps, so a local server would report all of them missing.
 name: cd-dast
 
 on:
@@ -32,14 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Baseline, not a full scan: a bundle of static files has no form to fuzz
-      # and no session to steal, so the active attacks would spend half an hour
-      # proving it.
-      #
-      # fail_action stays false on purpose. ZAP decides what to report from the
-      # passive rules it happens to ship, and it has none for Referrer-Policy,
-      # so letting it hold the gate would leave a hole that looks like a pass.
-      # It is the wide net here; the gate is the step below it.
+      # fail_action stays false: ZAP ships no passive rule for Referrer-Policy,
+      # so a green run would not mean the headers are there. The step below is
+      # the gate.
       - name: Scan the running site
         uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         with:
@@ -54,9 +46,6 @@ jobs:
           TARGET: ${{ inputs.site_url }}
         run: scripts/workflows/security/summarise-the-zap-report.sh
 
-      # The blocking half. Reads the headers this repository declares and asks
-      # for exactly those, so the check grows with the configuration instead of
-      # with ZAP's rule set.
       - name: Check the declared security headers are served
         env:
           SITE_URL: ${{ inputs.site_url }}

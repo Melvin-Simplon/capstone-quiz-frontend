@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# Puts the ZAP findings on the run's summary page.
-#
-# The raw report is an artifact nobody downloads. The deliverable asks for a
-# result that reads without digging through logs, and this is it.
+# Puts the ZAP findings on the run's summary page, because the raw report is an
+# artifact nobody downloads.
 
 set -euo pipefail
 
@@ -19,8 +17,6 @@ write() {
     cat >> "$GITHUB_STEP_SUMMARY"
 }
 
-# ZAP counts its own findings in the report. Reading them back beats parsing
-# the JSON a second time.
 counts() {
     local level="$1"
     grep -c "^| ${level} |" "$REPORT" 2>/dev/null || printf '0'
