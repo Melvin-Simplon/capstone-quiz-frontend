@@ -23,6 +23,9 @@ jobs:
   lint:
     uses: ./.github/workflows/ci-lint.yml
 
+  format:
+    uses: ./.github/workflows/ci-format.yml
+
   security:
     uses: ./.github/workflows/ci-security.yml
 
