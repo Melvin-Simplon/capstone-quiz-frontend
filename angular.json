@@ -97,6 +97,7 @@
             "coverageReporters": [
               "html",
               "lcovonly",
+              "json-summary",
               "text-summary"
             ]
           }
