@@ -41,7 +41,7 @@ trap stop EXIT
 scan() {
     local driver=()
     [[ -n "${CHROMEWEBDRIVER:-}" ]] && driver=(--chromedriver-path "${CHROMEWEBDRIVER}/chromedriver")
-    npx --yes @axe-core/cli "$URL" --exit --save "$REPORT" --stdout "${driver[@]}"
+    npx --yes @axe-core/cli "$URL" --exit --save "$REPORT" "${driver[@]}"
 }
 
 violations() {
