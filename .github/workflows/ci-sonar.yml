@@ -41,7 +41,16 @@ jobs:
       - name: Test with coverage
         run: npm run test:coverage
 
+      # Dependabot runs are handed a separate, empty secret store, so SONAR_TOKEN
+      # arrives blank and the scanner answers "Not authorized" on a branch that
+      # only ever touches package-lock.json. The tests above still run, and the
+      # branch is scanned for real once it lands on a long-lived branch.
+      #
+      # The step is skipped rather than the job: sonar / sonar is a required
+      # check, and a skipped caller job reports no nested check at all, which
+      # would leave every Dependabot pull request waiting forever.
       - name: Analyse
+        if: github.actor != 'dependabot[bot]'
         uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
