@@ -1,7 +1,7 @@
 # Prettier.
 #
 # Called from ci.yml.
-name: ci-format
+name: Format
 
 on:
   workflow_call:
@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   format:
+    name: Prettier
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

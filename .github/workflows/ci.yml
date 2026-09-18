@@ -3,7 +3,7 @@
 #
 # Three separate workflows would each end on their own, and workflow_run fires
 # per workflow, so the deployment would start after whichever finished first.
-name: ci
+name: CI
 
 on:
   pull_request:
@@ -29,7 +29,7 @@ jobs:
   security:
     uses: ./.github/workflows/ci-security.yml
 
-  codeql:
+  sast:
     # A called workflow cannot hold more than its caller grants it, so the
     # right to write findings to the Security tab is granted here.
     permissions:
@@ -37,7 +37,7 @@ jobs:
       security-events: write
     uses: ./.github/workflows/ci-codeql.yml
 
-  sonar:
+  quality:
     # secrets: inherit would hand the called workflow every secret this
     # repository holds. It needs one.
     secrets:
