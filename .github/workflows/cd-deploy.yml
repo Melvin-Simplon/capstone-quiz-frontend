@@ -25,10 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+      - uses: ./.github/actions/setup-node-app
 
       # No client secret: the workflow proves which repository, branch and
       # environment it runs from, and Azure hands back a token that dies with
@@ -63,8 +60,6 @@ jobs:
           API_KEY: ${{ steps.key.outputs.value }}
           BACKEND_ORIGIN: ${{ steps.target.outputs.backend_origin }}
         run: python3 scripts/workflows/deploy/point-the-build-at-the-backend.py
-
-      - run: npm ci --ignore-scripts
 
       - name: Build
         run: npm run build:prod
