@@ -20,13 +20,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    # workflow_run fires whatever the outcome, a failed ci included, so the
-    # conclusion is checked here. Without this the split would silently remove
-    # the guard that needs: used to provide.
+  # Whether there is anything to deploy to, asked before the deployment rather
+  # than inside it. The environment is built and torn down between sessions, so
+  # an absent one is a normal state: there is nothing to deploy, which is not a
+  # deployment that failed. Answering no here leaves deploy skipped rather than
+  # red, and leaves the reviewer on nonprod to be asked only about a deployment
+  # that can actually happen.
+  #
+  # workflow_run fires whatever the outcome, a failed ci included, so the
+  # conclusion is checked here. Without this the split would silently remove the
+  # guard that needs: used to provide.
+  target:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      found: ${{ steps.look.outputs.found }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # No client secret: the workflow proves which repository and branch it
+      # runs from, and Azure hands back a token that dies with the job. No
+      # environment: on this job, so that the gate on nonprod is reached only
+      # once there is something to gate. The Azure ids are repository variables,
+      # and refs/heads/main is a trusted subject of its own.
+      - name: Sign in to Azure
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Is the environment built
+        id: look
+        run: scripts/workflows/deploy/is-the-environment-built.sh
+
+  deploy:
+    needs: target
+    # Skipped, not failed, when the environment is not built.
+    if: needs.target.outputs.found == 'true'
     permissions:
       contents: read
       id-token: write
