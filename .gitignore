@@ -46,5 +46,6 @@ Thumbs.db
 # Byte-compiled python, produced by running the workflow scripts locally.
 __pycache__/
 *.pyc
+.coverage
 /test-results.json
 /axe-results.json
