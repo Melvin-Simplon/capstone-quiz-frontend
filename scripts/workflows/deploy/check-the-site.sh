@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Serving the site proves nothing about it being able to reach the backend,
-# which is the pair of settings the build just baked in. This checks both.
 
 set -euo pipefail
 
@@ -17,7 +15,6 @@ readonly API_KEY="${API_KEY:?}"
 readonly ATTEMPTS=20
 readonly PAUSE=10
 
-# stdout carries the url and nothing else.
 site_url() {
     local host
     host=$(az staticwebapp show --name "$SITE" \
@@ -38,9 +35,6 @@ wait_for_site() {
     return 1
 }
 
-# A 200 is not enough: App Service answers 200 with its own welcome page on
-# every path until an application is deployed over it, so the answer has to be
-# JSON for this to mean anything.
 check_backend_answers_json() {
     local origin="$1" api="${API_URL}/certifications" type
     type=$(curl -s -o /dev/null -w '%{content_type}' --max-time 20 \
@@ -61,7 +55,6 @@ check_backend_answers_json() {
     esac
 }
 
-# Silent without GITHUB_OUTPUT, so the script still runs by hand.
 emit() {
     [[ -n "${GITHUB_OUTPUT:-}" ]] || return 0
     printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"

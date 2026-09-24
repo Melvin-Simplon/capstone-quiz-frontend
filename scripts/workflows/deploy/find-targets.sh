@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Resolves what to deploy to, by tag rather than by name, so that renaming or
-# rebuilding the infrastructure leaves this untouched.
-#
-# Writes to GITHUB_OUTPUT: api_url, backend_origin, site, group, vault.
 
 set -euo pipefail
 
@@ -13,17 +9,11 @@ source "${HERE}/lib.sh"
 readonly RECAP_NAME="find-targets"
 readonly TAGGED="[?tags.project=='simplon-quiz']"
 
-# One query per value: asking for a pair returns a JSON array, which tsv prints
-# one element per line rather than as two columns, so reading it into two
-# variables silently leaves the second one empty.
-#
-# stdout carries the value and nothing else, the caller captures it.
 query_one() {
     local command="$1" filter="$2"
     az "$command" list --query "${TAGGED} | ${filter}" -o tsv 2>/dev/null
 }
 
-# Resolves one component and reports on it. stdout carries the value.
 resolve() {
     local label="$1" command="$2" filter="$3" value
     if ! value=$(query_one "$command" "$filter"); then

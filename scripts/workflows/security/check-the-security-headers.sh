@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Every header declared in staticwebapp.config.json has to come back on a real
-# request. Reading the configuration rather than a fixed list means adding a
-# header there extends the check for free.
 
 set -euo pipefail
 

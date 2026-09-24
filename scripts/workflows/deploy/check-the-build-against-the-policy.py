@@ -1,10 +1,3 @@
-"""Checks the built document against the policy the site will serve it with.
-
-Static Web Apps applies the policy when it serves the page, and nothing else
-does: ng serve sends no headers, so a document the browser will refuse still
-passes every build and every test.
-"""
-
 import json
 import pathlib
 import re
@@ -17,7 +10,6 @@ from lib import Report  # noqa: E402
 CONFIG = pathlib.Path("public/staticwebapp.config.json")
 DOCUMENT = pathlib.Path("dist/azure-quiz-frontend/browser/index.html")
 
-
 def read_directives(config):
     policy = json.loads(config.read_text())["globalHeaders"]["Content-Security-Policy"]
     return {
@@ -25,11 +17,7 @@ def read_directives(config):
         for parts in (d.split() for d in policy.split(";") if d.strip())
     }
 
-
 def refused_inline_script(document, directives):
-    """An onload or onerror attribute is script the policy has no way to tell
-    apart from an injection, so it never runs. Angular writes one when it defers
-    the stylesheet, which silently costs the whole sheet."""
     if "'unsafe-inline'" in directives.get("script-src", []):
         return []
 
@@ -43,7 +31,6 @@ def refused_inline_script(document, directives):
         if "src=" not in opening and body.strip():
             refused.append("inline script body")
     return refused
-
 
 def refused_origins(document, directives):
     allowed = {
@@ -59,7 +46,6 @@ def refused_origins(document, directives):
         if origin not in allowed:
             refused.append(f"no directive allows {origin}: {url}")
     return refused
-
 
 def main():
     report = Report("policy-check")
@@ -84,7 +70,6 @@ def main():
         report.ok(str(DOCUMENT), "holds nothing the policy refuses")
 
     return report.recap()
-
 
 if __name__ == "__main__":
     sys.exit(main())

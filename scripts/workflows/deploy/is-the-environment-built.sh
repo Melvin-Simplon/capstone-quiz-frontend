@@ -1,17 +1,4 @@
 #!/usr/bin/env bash
-# Answers one question: is there an environment to deploy to at all.
-#
-# The environment is created and destroyed between sessions, so finding nothing
-# is a normal state here: there is nothing to deploy, which is not the same as a
-# deployment that did not work. That case reports skipping and hands the
-# decision back through the found output, rather than failing the run.
-#
-# It deliberately asks nothing more. Terraform builds the site, the backend and
-# the vault together, so either the environment is there or it is not. An
-# environment that exists but is missing a piece is a real fault, and
-# find-targets.sh still fails on it with the piece named.
-#
-# Writes to GITHUB_OUTPUT: found.
 
 set -euo pipefail
 

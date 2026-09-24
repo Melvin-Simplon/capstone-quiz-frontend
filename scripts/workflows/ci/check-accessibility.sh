@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# axe-core against the built site, served locally. The rules it checks need a
-# rendered page, so a component test would not answer the same question.
 
 set -euo pipefail
 
@@ -35,9 +33,6 @@ stop() {
 }
 trap stop EXIT
 
-# The chromedriver npm package resolves a version of its own, which rarely
-# matches the Chrome on the runner. GitHub ships both, assorted, under
-# CHROMEWEBDRIVER.
 scan() {
     local driver=()
     [[ -n "${CHROMEWEBDRIVER:-}" ]] && driver=(--chromedriver-path "${CHROMEWEBDRIVER}/chromedriver")

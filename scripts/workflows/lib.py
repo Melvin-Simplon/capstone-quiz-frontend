@@ -1,11 +1,3 @@
-"""Shared by the workflow scripts written in Python.
-
-Same reporting contract as lib.sh, so a job reads the same whichever language
-its steps happen to be in: Ansible's vocabulary, its palette, its PLAY RECAP.
-
-Everything goes to stderr, leaving stdout to whatever a step actually returns.
-"""
-
 import os
 import sys
 
@@ -14,7 +6,6 @@ _COLOUR = bool(
     and not os.environ.get("NO_COLOR")
 )
 
-# outcome -> (colour, label shown in the recap)
 _OUTCOMES = {
     "ok": ("0;32", "ok"),
     "changed": ("0;33", "changed"),
@@ -23,13 +14,10 @@ _OUTCOMES = {
     "skipping": ("0;36", "skipped"),
 }
 
-
 def _paint(colour, text):
     return f"\033[{colour}m{text}\033[0m" if _COLOUR else text
 
-
 class Report:
-    """Counts outcomes and prints them the way Ansible does."""
 
     def __init__(self, name):
         self.name = name
@@ -63,10 +51,6 @@ class Report:
         print(f"             {message}", file=sys.stderr)
 
     def recap(self):
-        """Prints the recap and returns the exit code the caller should use.
-
-        Skipped never fails a run: not applicable is not wrong.
-        """
         print("\n" + _paint("1", "PLAY RECAP " + "*" * 62), file=sys.stderr)
 
         cells = []

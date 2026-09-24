@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Closes what read-api-key.sh opened. The workflow runs this even on failure,
-# but only when an address was actually recorded.
 
 set -euo pipefail
 
@@ -18,7 +16,6 @@ close_vault() {
         --ip-address "${RUNNER_IP}/32" --only-show-errors >/dev/null; then
         report_changed "$VAULT" "closed to ${RUNNER_IP}"
     else
-        # Left open, which is the whole point of reporting it loudly.
         report_failed "$VAULT" "could not remove the rule for ${RUNNER_IP}"
         hint "the address stays allowed on the vault until someone removes it"
         return 1

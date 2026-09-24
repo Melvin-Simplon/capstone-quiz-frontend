@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Writes to GITHUB_OUTPUT: token, masked so it never reaches a log.
 
 set -euo pipefail
 
@@ -11,7 +10,6 @@ readonly RECAP_NAME="deployment-token"
 readonly SITE="${SITE:?}"
 readonly GROUP="${GROUP:?}"
 
-# stdout carries the token and nothing else.
 fetch_token() {
     az staticwebapp secrets list --name "$SITE" \
         --resource-group "$GROUP" \

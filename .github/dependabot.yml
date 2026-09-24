@@ -1,8 +1,5 @@
 version: 2
 updates:
-  # Angular publishes its packages as a locked set: @angular/animations@X.Y.Z
-  # peer-depends on @angular/core@X.Y.Z exactly. Bumping them in separate PRs
-  # makes `npm ci` fail on peer resolution, so they must travel together.
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -25,9 +22,6 @@ updates:
         dependency-type: development
         patterns:
           - '*'
-    # @angular/build pins its peer to typescript ">=6.0 <6.1", so a major bump
-    # cannot install at all: npm ci stops on the peer conflict and takes the
-    # whole development group down with it. Angular decides when this moves.
     ignore:
       - dependency-name: typescript
         update-types: ['version-update:semver-major']

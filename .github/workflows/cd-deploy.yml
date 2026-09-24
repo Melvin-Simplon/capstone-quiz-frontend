@@ -1,15 +1,3 @@
-# Ships what lands on main: the reference analyses, then the site, then a DAST
-# scan of what was shipped.
-#
-# The build and security checks already gated the merge on the pull request,
-# so main only runs what needs the merged code: SonarCloud and CodeQL keep
-# their reference, which the next pull requests are compared against.
-#
-# A dispatch, which is how the Makefile in the infrastructure repository gets
-# here, skips those two: it asks for a deployment of what main already holds.
-#
-# Every deploy step calls a script under scripts/workflows/deploy. Nothing but
-# the wiring lives here, so each piece can be read, run and debugged on its own.
 name: CD - Deploy
 
 on:
@@ -27,8 +15,6 @@ concurrency:
 jobs:
   build:
     if: github.event_name == 'push'
-    # secrets: inherit would hand the called workflow every secret this
-    # repository holds. It needs one.
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     uses: ./.github/workflows/ci-build.yml
@@ -37,9 +23,6 @@ jobs:
 
   security:
     if: github.event_name == 'push'
-    # A called workflow cannot hold more than its caller grants. CodeQL writes
-    # to the Security tab; pull-requests is declared by dependency-review, which
-    # does not run here but is checked against this grant all the same.
     permissions:
       contents: read
       security-events: write
@@ -48,15 +31,6 @@ jobs:
     with:
       reference_only: true
 
-  # Whether there is anything to deploy to, asked before the deployment rather
-  # than inside it. The environment is built and torn down between sessions, so
-  # an absent one is a normal state: there is nothing to deploy, which is not a
-  # deployment that failed. Answering no here leaves deploy skipped rather than
-  # red, and leaves the reviewer on nonprod to be asked only about a deployment
-  # that can actually happen.
-  #
-  # build and security are skipped on a dispatch, and a skipped need skips this
-  # job too unless the condition says otherwise. A failed one still stops it.
   target:
     needs: [build, security]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
@@ -70,11 +44,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # No client secret: the workflow proves which repository and branch it
-      # runs from, and Azure hands back a token that dies with the job. No
-      # environment: on this job, so that the gate on nonprod is reached only
-      # once there is something to gate. The Azure ids are repository variables,
-      # and refs/heads/main is a trusted subject of its own.
       - name: Sign in to Azure
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3
         with:
@@ -86,12 +55,9 @@ jobs:
         id: look
         run: scripts/workflows/deploy/is-the-environment-built.sh
 
-  # Builds the site with the values it can only know at deploy time, uploads it,
-  # and checks that it answers and that the backend answers it.
   deploy:
     name: Static Web Apps
     needs: target
-    # Skipped, not failed, when the environment is not built.
     if: ${{ !cancelled() && needs.target.outputs.found == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -106,9 +72,6 @@ jobs:
 
       - uses: ./.github/actions/setup-node-app
 
-      # No client secret: the workflow proves which repository, branch and
-      # environment it runs from, and Azure hands back a token that dies with
-      # the job.
       - name: Sign in to Azure
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3
         with:
@@ -171,16 +134,9 @@ jobs:
           API_KEY: ${{ steps.key.outputs.value }}
         run: scripts/workflows/deploy/check-the-site.sh
 
-  # Separate job: a failure here means the deployment is wrong, not the upload.
   dast:
     needs: deploy
-    # build and security are skipped on a dispatch, and without a status
-    # function GitHub adds success(), which is false once anything up the chain
-    # was skipped: the scan would be skipped with them.
     if: ${{ !cancelled() && needs.deploy.result == 'success' }}
-    # A called workflow cannot hold more than its caller grants, and GitHub
-    # checks every job in it before starting the run, skipped ones included.
-    # id-token is for its target job, which only runs on the schedule.
     permissions:
       contents: read
       id-token: write

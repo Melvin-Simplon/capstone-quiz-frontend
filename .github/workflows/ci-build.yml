@@ -1,10 +1,3 @@
-# Everything that says whether the module builds and holds together: lint,
-# format, tests with the SonarCloud analysis, accessibility, production build.
-#
-# Runs on every pull request, which is where these checks gate a merge. main
-# does not run it again on push: cd-deploy.yml calls it with reference_only,
-# which keeps only the SonarCloud analysis, the reference pull requests are
-# compared against.
 name: CI - Build module
 
 on:
@@ -19,14 +12,11 @@ on:
     secrets:
       SONAR_TOKEN:
         required: true
-  # Runnable on its own while working on it, without opening a pull request.
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# A literal group: github.workflow names the caller when this file is called,
-# and sharing the caller's group would leave each run waiting on the other.
 concurrency:
   group: ci-build-${{ github.ref }}
   cancel-in-progress: false
@@ -58,24 +48,17 @@ jobs:
       - name: Prettier
         run: npm run format:check
 
-  # The tests run here rather than in a job of their own: coverage is a file on
-  # disk, and nothing carries it between two jobs without an artifact.
   quality:
     name: Tests and quality (SonarCloud)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      # Full history: Sonar dates an issue from the commit that introduced it,
-      # and a shallow clone leaves it nothing to read, so everything lands in
-      # New Code and the quality gate judges the whole repository as new.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup-node-app
 
-      # github-actions puts a failure on the diff at the line that failed;
-      # default keeps the table in the log; json feeds the summary below.
       - name: Test with coverage
         run: >
           npm run test:coverage --
@@ -86,11 +69,6 @@ jobs:
         with:
           python-version: '3.12'
 
-      # The policy check is a security gate of its own, so it is tested like
-      # one. Its coverage goes to Sonar next to the Angular one.
-      #
-      # Same care as npm ci --ignore-scripts: every package locked by hash, and
-      # wheels only, so no setup.py runs with the job's credentials.
       - name: Test the workflow scripts
         run: |
           pip install --quiet --require-hashes --only-binary :all: \
@@ -104,20 +82,12 @@ jobs:
           PULL_REQUEST: ${{ github.event.number }}
         run: scripts/workflows/ci/summarise-the-quality-report.sh
 
-      # Dependabot runs are handed a separate, empty secret store, so SONAR_TOKEN
-      # arrives blank and the scanner answers "Not authorized" on a branch that
-      # only ever touches package-lock.json. The tests above still run, and the
-      # branch is scanned for real once it lands on a long-lived branch.
-      #
-      # The step is skipped rather than the job: this job is a required check,
-      # and a skipped job would leave every Dependabot pull request waiting.
       - name: Analyse
         if: github.actor != 'dependabot[bot]'
         uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  # Not security, but the same idea: a gate on every pull request.
   a11y:
     name: Accessibility (axe-core)
     if: ${{ !inputs.reference_only }}
@@ -142,9 +112,6 @@ jobs:
           path: axe-results.json
           if-no-files-found: ignore
 
-  # The configuration cd-deploy.yml ships, built with the placeholders still in
-  # place: its budgets and its optimiser fail here rather than on the way to
-  # Azure. The deployment builds again, once the backend url is known.
   build:
     name: Build (production)
     if: ${{ !inputs.reference_only }}

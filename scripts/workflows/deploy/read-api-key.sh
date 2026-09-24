@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# Reading a secret goes through the data plane, which the vault firewall
-# filters. The door is opened for this runner here and closed by
-# close-the-vault.sh, so the allowed address never outlives the job.
-#
-# Writes to GITHUB_OUTPUT: runner_ip, value.
 
 set -euo pipefail
 
@@ -13,7 +8,6 @@ source "${HERE}/lib.sh"
 
 readonly RECAP_NAME="read-api-key"
 readonly VAULT="${VAULT:?}"
-# The rule is not in force the moment the call returns.
 readonly SETTLE=15
 
 emit() {
@@ -21,14 +15,10 @@ emit() {
     printf '%s=%s\n' "$key" "$value" >> "$GITHUB_OUTPUT"
 }
 
-# stdout carries the address and nothing else.
 runner_address() {
     curl -fsS --max-time 15 https://api.ipify.org
 }
 
-# The address is recorded before the rule is added, on purpose: the closing step
-# keys off that output, and an address allowed but never recorded would stay
-# allowed after the job ends.
 open_vault_to() {
     local ip="$1"
     emit runner_ip "$ip"
