@@ -88,9 +88,13 @@ jobs:
 
       # The policy check is a security gate of its own, so it is tested like
       # one. Its coverage goes to Sonar next to the Angular one.
+      #
+      # Same care as npm ci --ignore-scripts: every package locked by hash, and
+      # wheels only, so no setup.py runs with the job's credentials.
       - name: Test the workflow scripts
         run: |
-          pip install --quiet -r scripts/workflows/tests/requirements.txt
+          pip install --quiet --require-hashes --only-binary :all: \
+            -r scripts/workflows/tests/requirements.txt
           python -m pytest scripts/workflows/tests -p no:cacheprovider \
             --cov=scripts/workflows/deploy --cov-report=xml:coverage/python/coverage.xml
 
