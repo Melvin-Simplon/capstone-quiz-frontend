@@ -82,6 +82,18 @@ jobs:
           --reporters=json --reporters=default --reporters=github-actions
           --output-file=test-results.json
 
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      # The policy check is a security gate of its own, so it is tested like
+      # one. Its coverage goes to Sonar next to the Angular one.
+      - name: Test the workflow scripts
+        run: |
+          pip install --quiet -r scripts/workflows/tests/requirements.txt
+          python -m pytest scripts/workflows/tests -p no:cacheprovider \
+            --cov=scripts/workflows/deploy --cov-report=xml:coverage/python/coverage.xml
+
       - name: Put the tests and the coverage on the summary page
         if: always()
         env:

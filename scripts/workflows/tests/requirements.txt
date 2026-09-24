@@ -1,0 +1,4 @@
+# What CI installs to test the workflow scripts. Pinned: these run with the
+# repository token in reach, and a fresh release is not a reviewed one.
+pytest==9.1.1
+pytest-cov==7.1.0
