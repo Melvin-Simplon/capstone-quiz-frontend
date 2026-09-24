@@ -1,7 +1,8 @@
 # Azure Quiz Frontend
 
-[![CI](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/ci.yml)
-[![CD](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/cd.yml)
+[![CI - Build module](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/ci-build.yml/badge.svg?branch=main)](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/ci-build.yml)
+[![CI - Security scan](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/ci-security.yml/badge.svg?branch=main)](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/ci-security.yml)
+[![CD - Deploy](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/cd-deploy.yml/badge.svg?branch=main)](https://github.com/Melvin-Simplon/capstone-quiz-frontend/actions/workflows/cd-deploy.yml)
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=Melvin-Simplon_capstone-quiz-frontend&metric=alert_status)](https://sonarcloud.io/dashboard?id=Melvin-Simplon_capstone-quiz-frontend)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Melvin-Simplon_capstone-quiz-frontend&metric=coverage)](https://sonarcloud.io/dashboard?id=Melvin-Simplon_capstone-quiz-frontend)
 [![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)](package.json)
@@ -87,9 +88,11 @@ deployment time. Neither a URL nor a key is ever committed here.
 
 ## Deployment
 
-Merging into `main` runs [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml): lint, format
-check and unit tests, dependency and secret scanning, CodeQL, then the deployment, which waits on
-all three.
+Every pull request runs [`ci-build.yml`](.github/workflows/ci-build.yml) (lint, format, tests with
+SonarCloud, accessibility, production build) and [`ci-security.yml`](.github/workflows/ci-security.yml)
+(npm audit and Trivy, dependency-review, CodeQL, secret scanning). Merging into `main` runs
+[`cd-deploy.yml`](.github/workflows/cd-deploy.yml): the SonarCloud and CodeQL reference analyses,
+then the deployment, then a DAST scan of the deployed site.
 
 A static site has no runtime, so what a server would read from its environment has to be baked into
 the build. The deployment therefore:
