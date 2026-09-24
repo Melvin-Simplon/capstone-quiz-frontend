@@ -1,9 +1,9 @@
-# DAST. Called from cd.yml once the deployment has answered.
+# DAST. Called from cd-deploy.yml once the deployment has answered.
 #
 # It scans the deployed site rather than a build served on the runner: the
 # security headers live in staticwebapp.config.json and are applied by Static
 # Web Apps, so a local server would report all of them missing.
-name: DAST
+name: CD - DAST
 
 on:
   workflow_call:
@@ -18,15 +18,58 @@ on:
         description: The deployed site to scan.
         required: true
         type: string
+  # Once a day, 11:17 UTC. Every deployment is already scanned by cd-deploy.yml,
+  # so this only catches what changes without one: new ZAP rules, headers served
+  # differently. Midday because the environment is torn down between sessions
+  # and a night scan would find nothing. Off the hour on purpose: the start of
+  # every hour is when GitHub drops scheduled runs under load.
+  schedule:
+    - cron: '17 11 * * *'
 
 permissions:
   contents: read
 
 jobs:
+  # Only a scheduled run needs this: a caller or a person always hands the url
+  # in. No environment:, like the target job in cd-deploy.yml. It only reads,
+  # and on nonprod a scan would wait for a reviewer every day.
+  target:
+    if: github.event_name == 'schedule'
+    name: Find the site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      url: ${{ steps.find.outputs.url }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Sign in to Azure
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Find the deployed site
+        id: find
+        run: scripts/workflows/security/find-the-site-to-scan.sh
+
   dast:
+    needs: target
+    # target is skipped whenever the url was handed in, and a skipped need skips
+    # this job too unless the condition says otherwise. An empty url means the
+    # environment is not built: nothing to scan, which is not a failure.
+    if: >-
+      !cancelled() &&
+      (needs.target.result == 'skipped' || needs.target.outputs.url != '')
     name: OWASP ZAP
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      SITE_URL: ${{ inputs.site_url || needs.target.outputs.url }}
     steps:
       - uses: actions/checkout@v7
 
@@ -36,7 +79,7 @@ jobs:
       - name: Scan the running site
         uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         with:
-          target: ${{ inputs.site_url }}
+          target: ${{ env.SITE_URL }}
           fail_action: false
           allow_issue_writing: false
           artifact_name: zap-baseline-report
@@ -44,11 +87,9 @@ jobs:
       - name: Put the findings on the summary page
         if: always()
         env:
-          TARGET: ${{ inputs.site_url }}
+          TARGET: ${{ env.SITE_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: scripts/workflows/security/summarise-the-zap-report.sh
 
       - name: Check the declared security headers are served
-        env:
-          SITE_URL: ${{ inputs.site_url }}
         run: scripts/workflows/security/check-the-security-headers.sh
