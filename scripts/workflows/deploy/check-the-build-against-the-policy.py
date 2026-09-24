@@ -37,7 +37,9 @@ def refused_inline_script(document, directives):
         f"inline event handler: {handler.strip()}"
         for handler in re.findall(r'\son[a-z]+\s*=\s*"[^"]*"', document)
     ]
-    for opening, body in re.findall(r"<script([^>]*)>(.*?)</script>", document, re.S):
+    for opening, body in re.findall(
+        r"<script([^>]*)>(.*?)</script>", document, re.S | re.IGNORECASE
+    ):
         if "src=" not in opening and body.strip():
             refused.append("inline script body")
     return refused
